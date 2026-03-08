@@ -16,6 +16,61 @@ const defaultUnits = [
   { id: "ft", label: "Feet", abbr: "FT" },
 ];
 
+// ─── Default Allowance Categories ────────────────────────────────────────────
+
+const defaultAllowanceCategories = [
+  {
+    id: uid(),
+    name: "Client Selections",
+    description: "Owner-supplied or owner-selected finishes with fixed allowance budgets",
+    color: "blue",
+    items: [
+      { id: uid(), name: "Kitchen Sink & Faucet", qty: 1, amount: 800, notes: "Undermount, includes faucet" },
+      { id: uid(), name: "Bathroom Sink & Faucet (per bath)", qty: 2, amount: 350, notes: "" },
+      { id: uid(), name: "Kitchen Cabinets", qty: 1, amount: 8000, notes: "Box cabinets, owner selects style" },
+      { id: uid(), name: "Tile — Floor", qty: 1, amount: 2500, notes: "Material only; install via BOM" },
+      { id: uid(), name: "Tile — Shower/Wall", qty: 1, amount: 1800, notes: "Material only" },
+      { id: uid(), name: "Flooring (LVP/Hardwood)", qty: 1, amount: 4500, notes: "Material only; install via BOM" },
+      { id: uid(), name: "Light Fixtures", qty: 1, amount: 1200, notes: "All rooms combined" },
+      { id: uid(), name: "Plumbing Fixtures — Toilets", qty: 2, amount: 300, notes: "Per unit" },
+      { id: uid(), name: "Hardware — Doors & Cabinets", qty: 1, amount: 600, notes: "Knobs, pulls, hinges" },
+      { id: uid(), name: "Appliances", qty: 1, amount: 5000, notes: "Owner-supplied or selected" },
+    ],
+  },
+  {
+    id: uid(),
+    name: "Trade Allowances",
+    description: "Specialty subcontractor scopes with fixed budgeted allowances",
+    color: "amber",
+    items: [
+      { id: uid(), name: "Specialty Demolition", qty: 1, amount: 2500, notes: "Structural, hazmat, or complex demo" },
+      { id: uid(), name: "Electrician — Rough & Finish", qty: 1, amount: 6500, notes: "Panels, outlets, switches, fixtures" },
+      { id: uid(), name: "Plumber — Rough & Finish", qty: 1, amount: 5500, notes: "Supply, drain, fixtures" },
+      { id: uid(), name: "HVAC", qty: 1, amount: 8000, notes: "Equipment + ductwork + controls" },
+      { id: uid(), name: "Quartz Countertop Supply & Install", qty: 1, amount: 3500, notes: "Template, fabrication, install" },
+      { id: uid(), name: "Specialty Glass Install", qty: 1, amount: 1800, notes: "Shower glass, mirrors" },
+      { id: uid(), name: "Spray Foam Insulation", qty: 1, amount: 2000, notes: "If applicable" },
+      { id: uid(), name: "Fire Suppression / Sprinklers", qty: 1, amount: 3000, notes: "If required by code" },
+    ],
+  },
+  {
+    id: uid(),
+    name: "Trim & Finishes",
+    description: "Finish trim materials, specialty profiles, and edge treatments",
+    color: "green",
+    items: [
+      { id: uid(), name: "Baseboards", qty: 1, amount: 800, notes: "Material + install allowance" },
+      { id: uid(), name: "Door Casing Sets", qty: 6, amount: 85, notes: "Per opening" },
+      { id: uid(), name: "Crown Molding", qty: 1, amount: 600, notes: "Material + install" },
+      { id: uid(), name: "Jolly Trim / Schluter Profiles", qty: 1, amount: 250, notes: "Tile edge transitions" },
+      { id: uid(), name: "Stair Nose / Floor Transitions", qty: 1, amount: 180, notes: "" },
+      { id: uid(), name: "Window Sill Trim", qty: 4, amount: 65, notes: "Per window" },
+      { id: uid(), name: "Closet Shelving (wire or melamine)", qty: 1, amount: 450, notes: "" },
+      { id: uid(), name: "Specialty Paint / Accent Wall", qty: 1, amount: 300, notes: "Feature wall or textured finish" },
+    ],
+  },
+];
+
 // ─── Section Library ──────────────────────────────────────────────────────────
 
 function makeSection(name, description, takeoffInputs, materials) {
@@ -984,39 +1039,75 @@ function ProjectsModal({ projects, currentId, onLoad, onDelete, onNew, onClose }
 
 // ─── Summary Sidebar ──────────────────────────────────────────────────────────
 
-function SummaryPanel({ sections, units }) {
-  const grandTotal = sections.reduce((sum, sec) => sum + sectionCost(sec), 0);
+function SummaryPanel({ sections, units, allowanceCategories, bomTotal, allowancesTotal, grandTotal }) {
   return (
     <div className="summary-panel">
       <div className="panel-header"><span className="panel-title">Summary</span></div>
-      <div className="summary-rows">
-        {sections.map(sec => {
-          const cost = sectionCost(sec);
-          const vals = sectionValues(sec);
-          const primaryId = sec.primaryInputId || sec.takeoffInputs?.[0]?.id;
-          const primaryInput = sec.takeoffInputs?.find(t => t.id === primaryId);
-          const primaryUnit = units.find(u => u.id === primaryInput?.unitId);
-          const primaryVal = vals[primaryId] || 0;
-          return (
-            <div key={sec.id} className="summary-row">
-              <span>{sec.name}</span>
-              <div className="summary-row-right">
-                <span className="summary-cost">${cost.toFixed(2)}</span>
-                {primaryVal > 0 && <span className="summary-per">${(cost / primaryVal).toFixed(2)}/{primaryUnit?.abbr || "—"}</span>}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="summary-total"><span>Total</span><span>${grandTotal.toFixed(2)}</span></div>
+
+      {/* BOM Sections */}
+      {sections.length > 0 && (
+        <>
+          <div className="summary-group-label">Bill of Materials</div>
+          <div className="summary-rows">
+            {sections.map(sec => {
+              const cost = sectionCost(sec);
+              const vals = sectionValues(sec);
+              const primaryId = sec.primaryInputId || sec.takeoffInputs?.[0]?.id;
+              const primaryInput = sec.takeoffInputs?.find(t => t.id === primaryId);
+              const primaryUnit = units.find(u => u.id === primaryInput?.unitId);
+              const primaryVal = vals[primaryId] || 0;
+              return (
+                <div key={sec.id} className="summary-row">
+                  <span>{sec.name}</span>
+                  <div className="summary-row-right">
+                    <span className="summary-cost">${cost.toFixed(2)}</span>
+                    {primaryVal > 0 && <span className="summary-per">${(cost / primaryVal).toFixed(2)}/{primaryUnit?.abbr || "—"}</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="summary-subtotal">
+            <span>BOM Subtotal</span><span>${bomTotal.toFixed(2)}</span>
+          </div>
+        </>
+      )}
+
+      {/* Allowance Categories */}
+      {allowanceCategories.length > 0 && (
+        <>
+          <div className="summary-group-label" style={{ marginTop: sections.length > 0 ? "12px" : "0" }}>Allowances</div>
+          <div className="summary-rows">
+            {allowanceCategories.map(cat => {
+              const total = allowanceCategoryTotal(cat);
+              const colors = CAT_COLORS[cat.color] || CAT_COLORS.blue;
+              return (
+                <div key={cat.id} className="summary-row">
+                  <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: colors.text, flexShrink: 0, display: "inline-block" }} />
+                    {cat.name}
+                  </span>
+                  <div className="summary-row-right">
+                    <span className="summary-cost">${total.toFixed(2)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="summary-subtotal">
+            <span>Allowances Subtotal</span><span>${allowancesTotal.toFixed(2)}</span>
+          </div>
+        </>
+      )}
+
+      <div className="summary-total"><span>Grand Total</span><span>${grandTotal.toFixed(2)}</span></div>
     </div>
   );
 }
 
 // ─── Print Report ─────────────────────────────────────────────────────────────
 
-function PrintReport({ projectName, sections, units }) {
-  const grandTotal = sections.reduce((sum, sec) => sum + sectionCost(sec), 0);
+function PrintReport({ projectName, sections, units, allowanceCategories, bomTotal, allowancesTotal, grandTotal }) {
   return (
     <div className="print-report">
       <div className="print-header">
@@ -1052,8 +1143,34 @@ function PrintReport({ projectName, sections, units }) {
                 </tr>
               );
             })}
+            {/* Allowance category rows in summary */}
+            {allowanceCategories.map(cat => {
+              const total = allowanceCategoryTotal(cat);
+              const pct = grandTotal > 0 ? (total / grandTotal * 100).toFixed(1) : "0.0";
+              return (
+                <tr key={cat.id}>
+                  <td><em>{cat.name} (allowance)</em></td>
+                  <td className="print-right print-mono">${total.toFixed(2)}</td>
+                  <td className="print-right print-mono">{pct}%</td>
+                  <td className="print-mono">—</td>
+                </tr>
+              );
+            })}
           </tbody>
-          <tfoot><tr className="print-total-row"><td><strong>Total</strong></td><td className="print-right print-mono"><strong>${grandTotal.toFixed(2)}</strong></td><td className="print-right print-mono">100%</td><td /></tr></tfoot>
+          <tfoot>
+            <tr className="print-total-row" style={{ borderTop: "1px solid #bbb" }}>
+              <td>BOM Subtotal</td><td className="print-right print-mono">${bomTotal.toFixed(2)}</td>
+              <td className="print-right print-mono">{grandTotal > 0 ? (bomTotal / grandTotal * 100).toFixed(1) : "0"}%</td><td />
+            </tr>
+            <tr className="print-total-row">
+              <td>Allowances Subtotal</td><td className="print-right print-mono">${allowancesTotal.toFixed(2)}</td>
+              <td className="print-right print-mono">{grandTotal > 0 ? (allowancesTotal / grandTotal * 100).toFixed(1) : "0"}%</td><td />
+            </tr>
+            <tr className="print-total-row" style={{ fontSize: "11pt" }}>
+              <td><strong>Grand Total</strong></td><td className="print-right print-mono"><strong>${grandTotal.toFixed(2)}</strong></td>
+              <td className="print-right print-mono">100%</td><td />
+            </tr>
+          </tfoot>
         </table>
       </div>
 
@@ -1113,7 +1230,257 @@ function PrintReport({ projectName, sections, units }) {
           </div>
         );
       })}
+      {/* Allowances Detail */}
+      {allowanceCategories.length > 0 && (
+        <div className="print-section print-break-inside">
+          <h2 className="print-section-heading">Allowances</h2>
+          {allowanceCategories.map(cat => {
+            const catTotal = allowanceCategoryTotal(cat);
+            return (
+              <div key={cat.id} style={{ marginBottom: "16pt" }}>
+                <div style={{ fontWeight: 700, fontSize: "10pt", marginBottom: "4pt", textTransform: "uppercase", letterSpacing: "0.04em", color: "#444" }}>
+                  {cat.name}
+                  {cat.description && <span style={{ fontWeight: 400, fontSize: "9pt", color: "#777", textTransform: "none", letterSpacing: 0 }}> — {cat.description}</span>}
+                </div>
+                <table className="print-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th><th>Notes</th>
+                      <th className="print-center">Qty</th>
+                      <th className="print-right">Amount Each</th>
+                      <th className="print-right">Line Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cat.items.map(item => {
+                      const lineTotal = (item.qty || 1) * (item.amount || 0);
+                      return (
+                        <tr key={item.id}>
+                          <td>{item.name}</td>
+                          <td className="print-note">{item.notes || "—"}</td>
+                          <td className="print-center print-mono">{item.qty || 1}</td>
+                          <td className="print-right print-mono">${(item.amount || 0).toFixed(2)}</td>
+                          <td className="print-right print-mono">${lineTotal.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="print-total-row">
+                      <td colSpan={4}><strong>{cat.name} Total</strong></td>
+                      <td className="print-right print-mono"><strong>${catTotal.toFixed(2)}</strong></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="print-footer">Generated by BOM Builder · {new Date().toLocaleString()}</div>
+    </div>
+  );
+}
+
+// ─── Allowances System ────────────────────────────────────────────────────────
+
+function allowanceCategoryTotal(cat) {
+  return cat.items.reduce((sum, item) => sum + (item.amount || 0), 0);
+}
+
+function AllowanceItem({ item, onUpdate, onDelete }) {
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(item.name);
+  const total = (item.qty || 1) * (item.amount || 0);
+
+  function commitName() {
+    onUpdate({ ...item, name: nameDraft });
+    setEditingName(false);
+  }
+
+  return (
+    <tr className="mat-row allowance-row">
+      {/* Name + notes — double-click to rename */}
+      <td>
+        {editingName ? (
+          <div className="inline-name-edit">
+            <input className="cell-input" value={nameDraft} onChange={e => setNameDraft(e.target.value)}
+              onBlur={commitName} onKeyDown={e => { if (e.key === "Enter") commitName(); if (e.key === "Escape") setEditingName(false); }} autoFocus />
+          </div>
+        ) : (
+          <div className="mat-name allowance-name" onDoubleClick={() => { setNameDraft(item.name); setEditingName(true); }} title="Double-click to rename">
+            {item.name}
+          </div>
+        )}
+        {item.notes && <div className="mat-notes">{item.notes}</div>}
+      </td>
+      {/* Notes inline edit */}
+      <td className="allowance-notes-td">
+        <input
+          className="cell-input notes-input allowance-notes-input"
+          value={item.notes || ""}
+          onChange={e => onUpdate({ ...item, notes: e.target.value })}
+          placeholder="Notes…"
+        />
+      </td>
+      {/* Qty — inline number spinner */}
+      <td className="center allowance-qty-td">
+        <input
+          type="number"
+          className="cell-input sm allowance-num-input"
+          min="0"
+          step="1"
+          value={item.qty ?? 1}
+          onChange={e => onUpdate({ ...item, qty: parseFloat(e.target.value) || 0 })}
+        />
+      </td>
+      {/* Amount each — inline */}
+      <td className="right allowance-amt-td">
+        <input
+          type="number"
+          className="cell-input sm allowance-num-input"
+          min="0"
+          step="0.01"
+          value={item.amount ?? 0}
+          onChange={e => onUpdate({ ...item, amount: parseFloat(e.target.value) || 0 })}
+        />
+      </td>
+      {/* Line total — computed */}
+      <td className="right allowance-total-td">
+        <strong>${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</strong>
+      </td>
+      <td>
+        <button className="action-btn danger" onClick={onDelete}><Icon d={Icons.trash} size={14} /></button>
+      </td>
+    </tr>
+  );
+}
+
+const CAT_COLORS = {
+  blue:  { badge: "rgba(61,126,255,0.12)",  text: "#3d7eff", border: "rgba(61,126,255,0.25)" },
+  amber: { badge: "rgba(245,158,11,0.12)",  text: "#f59e0b", border: "rgba(245,158,11,0.25)" },
+  green: { badge: "rgba(34,197,94,0.12)",   text: "#22c55e", border: "rgba(34,197,94,0.25)"  },
+  purple:{ badge: "rgba(168,85,247,0.12)",  text: "#a855f7", border: "rgba(168,85,247,0.25)" },
+};
+
+function AllowanceCategory({ cat, onUpdate, onDelete }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(cat.name);
+  const total = allowanceCategoryTotal(cat);
+  const colors = CAT_COLORS[cat.color] || CAT_COLORS.blue;
+
+  function addItem() {
+    onUpdate({ ...cat, items: [...cat.items, { id: uid(), name: "New Allowance", qty: 1, amount: 0, notes: "" }] });
+  }
+  function updateItem(id, updated) {
+    onUpdate({ ...cat, items: cat.items.map(i => i.id === id ? updated : i) });
+  }
+  function deleteItem(id) {
+    onUpdate({ ...cat, items: cat.items.filter(i => i.id !== id) });
+  }
+
+  function copyToClipboard() {
+    const lines = [`${cat.name}`, `${"─".repeat(40)}`];
+    cat.items.forEach(item => {
+      const lineTotal = (item.qty || 1) * (item.amount || 0);
+      const qtyLabel = item.qty > 1 ? `${item.qty} × $${item.amount.toFixed(2)}` : `$${item.amount.toFixed(2)}`;
+      lines.push(`${item.name}${item.notes ? ` (${item.notes})` : ""}  |  ${qtyLabel}  =  $${lineTotal.toFixed(2)}`);
+    });
+    lines.push(`${"─".repeat(40)}`);
+    lines.push(`TOTAL: $${total.toFixed(2)}`);
+    navigator.clipboard.writeText(lines.join("\n")).catch(() => {});
+  }
+
+  return (
+    <div className="section-card allowance-card" style={{ "--cat-color": colors.text, "--cat-bg": colors.badge, "--cat-border": colors.border }}>
+      <div className="section-header allowance-header">
+        <div className="section-header-left">
+          <button className="collapse-btn" onClick={() => setCollapsed(!collapsed)}><Icon d={collapsed ? Icons.chevDown : Icons.chevUp} size={14} /></button>
+          <div className="allowance-color-dot" style={{ background: colors.text }} />
+          {editingTitle ? (
+            <div className="title-edit">
+              <input className="title-input" value={titleDraft} onChange={e => setTitleDraft(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && (onUpdate({ ...cat, name: titleDraft }), setEditingTitle(false))} autoFocus />
+              <button className="action-btn save" onClick={() => { onUpdate({ ...cat, name: titleDraft }); setEditingTitle(false); }}><Icon d={Icons.check} size={13} /></button>
+              <button className="action-btn" onClick={() => setEditingTitle(false)}><Icon d={Icons.x} size={13} /></button>
+            </div>
+          ) : (
+            <h3 className="section-title" onDoubleClick={() => setEditingTitle(true)}>{cat.name}</h3>
+          )}
+          {cat.description && !editingTitle && <span className="section-desc">{cat.description}</span>}
+        </div>
+        <div className="section-header-right">
+          <span className="stat-badge cost" style={{ background: colors.badge, color: colors.text, borderColor: colors.border }}>
+            ${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </span>
+          <span className="stat-badge" style={{ background: "var(--surface2)", color: "var(--text3)", border: "1px solid var(--border)" }}>
+            {cat.items.length} item{cat.items.length !== 1 ? "s" : ""}
+          </span>
+          <div className="section-actions">
+            <button className="action-btn" onClick={copyToClipboard} title="Copy to clipboard"><Icon d={Icons.copy} size={14} /></button>
+            <button className="action-btn danger" onClick={onDelete} title="Delete category"><Icon d={Icons.trash} size={14} /></button>
+          </div>
+        </div>
+      </div>
+
+      {!collapsed && (
+        <div className="section-body">
+          <table className="mat-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Notes</th>
+                <th className="center">Qty</th>
+                <th className="right">Amount Each</th>
+                <th className="right">Line Total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {cat.items.map(item => (
+                <AllowanceItem key={item.id} item={item}
+                  onUpdate={updated => updateItem(item.id, updated)}
+                  onDelete={() => deleteItem(item.id)}
+                />
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="allowance-tfoot-row">
+                <td colSpan={4}><strong>Category Total</strong></td>
+                <td className="right"><strong>${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</strong></td>
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+          <button className="add-mat-btn" onClick={addItem}><Icon d={Icons.plus} size={14} /> Add Item</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AllowancesTab({ categories, onUpdate }) {
+  const allowancesTotal = categories.reduce((sum, cat) => sum + allowanceCategoryTotal(cat), 0);
+
+  function addCategory() {
+    const colorKeys = Object.keys(CAT_COLORS);
+    const color = colorKeys[categories.length % colorKeys.length];
+    onUpdate([...categories, { id: uid(), name: "New Category", description: "", color, items: [] }]);
+  }
+
+  return (
+    <div className="allowances-tab">
+      {categories.map(cat => (
+        <AllowanceCategory key={cat.id} cat={cat}
+          onUpdate={updated => onUpdate(categories.map(c => c.id === cat.id ? updated : c))}
+          onDelete={() => { if (confirm("Delete this allowance category?")) onUpdate(categories.filter(c => c.id !== cat.id)); }}
+        />
+      ))}
+      <button className="add-section-btn" onClick={addCategory}>
+        <Icon d={Icons.plus} size={15} /> Add Allowance Category
+      </button>
     </div>
   );
 }
@@ -1124,20 +1491,24 @@ export default function App() {
   const saved = loadState();
   const [units, setUnits] = useState(saved?.units || defaultUnits);
   const [sections, setSections] = useState(saved?.sections || []);
+  const [allowanceCategories, setAllowanceCategories] = useState(saved?.allowanceCategories || defaultAllowanceCategories);
   const [projects, setProjects] = useState(saved?.projects || []);
   const [currentProjectId, setCurrentProjectId] = useState(saved?.currentProjectId || null);
   const [currentProjectName, setCurrentProjectName] = useState(saved?.currentProjectName || "Untitled Project");
   const [editingProjectName, setEditingProjectName] = useState(false);
-  const [showAddSection, setShowAddSection] = useState(false);
+  const [activeTab, setActiveTab] = useState("bom"); // "bom" | "allowances"
+  const [showSummary, setShowSummary] = useState(false);
   const [showManageUnits, setShowManageUnits] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
 
   useEffect(() => {
-    saveState({ units, sections, projects, currentProjectId, currentProjectName });
-  }, [units, sections, projects, currentProjectId, currentProjectName]);
+    saveState({ units, sections, allowanceCategories, projects, currentProjectId, currentProjectName });
+  }, [units, sections, allowanceCategories, projects, currentProjectId, currentProjectName]);
 
-  const grandTotal = sections.reduce((sum, sec) => sum + sectionCost(sec), 0);
+  const bomTotal = sections.reduce((sum, sec) => sum + sectionCost(sec), 0);
+  const allowancesTotal = allowanceCategories.reduce((sum, cat) => sum + allowanceCategoryTotal(cat), 0);
+  const grandTotal = bomTotal + allowancesTotal;
 
   function addSection(sec) { setSections([...sections, sec]); setShowAddSection(false); }
   function updateSection(id, updated) { setSections(sections.map(s => s.id === id ? updated : s)); }
@@ -1147,7 +1518,7 @@ export default function App() {
   }
 
   function saveProject() {
-    const project = { id: currentProjectId || uid(), name: currentProjectName, savedAt: new Date().toISOString(), sections, units };
+    const project = { id: currentProjectId || uid(), name: currentProjectName, savedAt: new Date().toISOString(), sections, units, allowanceCategories };
     setProjects([...projects.filter(p => p.id !== project.id), project]);
     setCurrentProjectId(project.id);
     setSaveFlash(true);
@@ -1155,8 +1526,12 @@ export default function App() {
   }
 
   function loadProject(p) {
-    setSections(p.sections); setUnits(p.units || defaultUnits);
-    setCurrentProjectId(p.id); setCurrentProjectName(p.name); setShowProjects(false);
+    setSections(p.sections);
+    setUnits(p.units || defaultUnits);
+    setAllowanceCategories(p.allowanceCategories || defaultAllowanceCategories);
+    setCurrentProjectId(p.id);
+    setCurrentProjectName(p.name);
+    setShowProjects(false);
   }
 
   return (
@@ -1166,7 +1541,7 @@ export default function App() {
       {showProjects && <ProjectsModal projects={projects} currentId={currentProjectId}
         onLoad={loadProject}
         onDelete={id => setProjects(projects.filter(p => p.id !== id))}
-        onNew={() => { setSections([]); setCurrentProjectId(null); setCurrentProjectName("Untitled Project"); setShowProjects(false); }}
+        onNew={() => { setSections([]); setAllowanceCategories(defaultAllowanceCategories); setCurrentProjectId(null); setCurrentProjectName("Untitled Project"); setShowProjects(false); }}
         onClose={() => setShowProjects(false)} />}
 
       <header className="topbar">
@@ -1181,6 +1556,9 @@ export default function App() {
         </div>
         <div className="topbar-right">
           <div className="grand-total-badge">${grandTotal.toFixed(2)}</div>
+          <button className="summary-toggle-btn topbar-btn" onClick={() => setShowSummary(s => !s)} title="Summary">
+            ≡ <span className="btn-label">Summary</span>
+          </button>
           <button className="topbar-btn" onClick={() => setShowManageUnits(true)}><Icon d={Icons.settings} size={15} /> Units</button>
           <button className="topbar-btn" onClick={() => setShowProjects(true)}><Icon d={Icons.folder} size={15} /> Projects</button>
           <button className={`topbar-btn ${saveFlash ? "flash" : ""}`} onClick={saveProject}><Icon d={saveFlash ? Icons.check : Icons.save} size={15} /> {saveFlash ? "Saved!" : "Save"}</button>
@@ -1189,31 +1567,56 @@ export default function App() {
       </header>
 
       <div className="main-layout">
-        <aside className="sidebar"><SummaryPanel sections={sections} units={units} /></aside>
+        {/* Mobile sidebar overlay */}
+        <div className={`sidebar-overlay ${showSummary ? "open" : ""}`} onClick={() => setShowSummary(false)} />
+        <aside className={`sidebar ${showSummary ? "open" : ""}`}>
+          <div className="sidebar-handle" onClick={() => setShowSummary(false)} />
+          <SummaryPanel sections={sections} units={units} allowanceCategories={allowanceCategories} bomTotal={bomTotal} allowancesTotal={allowancesTotal} grandTotal={grandTotal} />
+        </aside>
         <main className="content">
-          {sections.length === 0 && (
-            <div className="empty-state">
-              <div className="empty-icon">▦</div>
-              <h2>No sections yet</h2>
-              <p>Pick from the section library or start with a blank section.</p>
-              <button className="btn-primary large" onClick={() => setShowAddSection(true)}><Icon d={Icons.library} size={16} /> Browse Section Library</button>
-            </div>
-          )}
-          {sections.map(sec => (
-            <Section key={sec.id} section={sec} units={units}
-              onUpdate={updated => updateSection(sec.id, updated)}
-              onDelete={() => deleteSection(sec.id)}
-              onDuplicate={() => duplicateSection(sec)} />
-          ))}
-          {sections.length > 0 && (
-            <button className="add-section-btn" onClick={() => setShowAddSection(true)}>
-              <Icon d={Icons.plus} size={15} /> Add Section
+          {/* Tab Bar */}
+          <div className="content-tabs">
+            <button className={`content-tab ${activeTab === "bom" ? "active" : ""}`} onClick={() => setActiveTab("bom")}>
+              Bill of Materials
+              {bomTotal > 0 && <span className="tab-badge">${bomTotal.toFixed(0)}</span>}
             </button>
+            <button className={`content-tab ${activeTab === "allowances" ? "active" : ""}`} onClick={() => setActiveTab("allowances")}>
+              Allowances
+              {allowancesTotal > 0 && <span className="tab-badge allowance">${allowancesTotal.toFixed(0)}</span>}
+            </button>
+          </div>
+
+          {activeTab === "bom" && (
+            <>
+              {sections.length === 0 && (
+                <div className="empty-state">
+                  <div className="empty-icon">▦</div>
+                  <h2>No BOM sections yet</h2>
+                  <p>Pick from the section library or start with a blank section.</p>
+                  <button className="btn-primary large" onClick={() => setShowAddSection(true)}><Icon d={Icons.library} size={16} /> Browse Section Library</button>
+                </div>
+              )}
+              {sections.map(sec => (
+                <Section key={sec.id} section={sec} units={units}
+                  onUpdate={updated => updateSection(sec.id, updated)}
+                  onDelete={() => deleteSection(sec.id)}
+                  onDuplicate={() => duplicateSection(sec)} />
+              ))}
+              {sections.length > 0 && (
+                <button className="add-section-btn" onClick={() => setShowAddSection(true)}>
+                  <Icon d={Icons.plus} size={15} /> Add Section
+                </button>
+              )}
+            </>
+          )}
+
+          {activeTab === "allowances" && (
+            <AllowancesTab categories={allowanceCategories} onUpdate={setAllowanceCategories} />
           )}
         </main>
       </div>
 
-      <PrintReport projectName={currentProjectName} sections={sections} units={units} />
+      <PrintReport projectName={currentProjectName} sections={sections} units={units} allowanceCategories={allowanceCategories} bomTotal={bomTotal} allowancesTotal={allowancesTotal} grandTotal={grandTotal} />
     </div>
   );
 }

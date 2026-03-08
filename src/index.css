@@ -1154,8 +1154,324 @@ body {
   }
 }
 
+/* ── Content Tabs ── */
+.content-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.content-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  color: var(--text3);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.content-tab:hover { color: var(--text); }
+.content-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+.tab-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: rgba(61, 126, 255, 0.15);
+  color: var(--accent);
+}
+
+.tab-badge.allowance { background: rgba(245,158,11,0.15); color: #f59e0b; }
+
+/* ── Allowances Tab ── */
+.allowances-tab { display: flex; flex-direction: column; gap: 12px; }
+.allowance-card { border-top: 2px solid var(--cat-color, var(--accent)); }
+.allowance-header { background: linear-gradient(90deg, var(--cat-bg, var(--accent-glow)), var(--surface2)); }
+.allowance-color-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.allowance-amount { font-family: var(--mono); color: var(--text2); }
+.allowance-notes-col { font-size: 11px; color: var(--text3); max-width: 200px; }
+
+.allowance-tfoot-row td {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border2);
+  background: var(--surface2);
+  font-size: 12px;
+}
+
+/* ── Summary Group Labels ── */
+.summary-group-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 8px 0 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.summary-subtotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text2);
+  border-top: 1px dashed var(--border);
+}
+
+.summary-subtotal span:last-child { font-family: var(--mono); font-weight: 500; }
+
+.allowance-row td { vertical-align: middle; }
+.allowance-name { cursor: default; }
+.allowance-name:hover { color: var(--accent); }
+
+.allowance-notes-td { min-width: 160px; }
+.allowance-notes-input { font-size: 11px; color: var(--text3); background: transparent; border-color: transparent; }
+.allowance-notes-input:focus { background: var(--bg); border-color: var(--accent); }
+.allowance-notes-input::placeholder { color: var(--text3); opacity: 0.5; }
+
+.allowance-qty-td { width: 70px; }
+.allowance-amt-td { width: 110px; }
+.allowance-total-td { white-space: nowrap; }
+
+.allowance-num-input {
+  width: 100%;
+  text-align: right;
+  font-family: var(--mono);
+  background: transparent;
+  border-color: transparent;
+}
+.allowance-num-input:focus { background: var(--bg); border-color: var(--accent); }
+
+.inline-name-edit { width: 100%; }
+
 /* ── Scrollbars ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+/* ════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE  (≤ 768px)
+   ════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Layout: stack vertically, no sidebar ── */
+  .app { height: 100dvh; }
+
+  .main-layout {
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    display: none; /* hidden by default; shown as overlay */
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    max-height: 50dvh;
+    overflow-y: auto;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    background: var(--surface);
+    border-top: 1px solid var(--border2);
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
+    border-radius: 12px 12px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .sidebar.open { display: flex; flex-direction: column; }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 199;
+  }
+  .sidebar-overlay.open { display: block; }
+
+  .content {
+    padding: 12px;
+    gap: 10px;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  /* ── Topbar: compress ── */
+  .topbar {
+    padding: 0 12px;
+    height: 48px;
+    gap: 8px;
+  }
+
+  .project-name-wrap { display: none; }
+  .logo-text { display: none; }
+  .logo-icon { font-size: 22px; }
+
+  .topbar-right { gap: 5px; }
+
+  /* Hide label text on topbar buttons, show icon only */
+  .topbar-btn { padding: 6px 8px; font-size: 11px; gap: 3px; }
+  .topbar-btn .btn-label { display: none; }
+
+  /* Summary toggle button — mobile only */
+  .summary-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* ── Content tabs ── */
+  .content-tabs { margin-bottom: 10px; }
+  .content-tab { padding: 7px 12px; font-size: 12px; }
+
+  /* ── Section cards ── */
+  .section-header {
+    padding: 10px 10px;
+    gap: 8px;
+  }
+
+  .section-header-left {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .section-title { font-size: 13px; }
+  .section-desc { display: none; } /* too much noise on mobile */
+
+  .section-header-right {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .section-stats { gap: 4px; }
+  .stat-badge { font-size: 10px; padding: 2px 6px; }
+
+  /* ── Section inputs bar: wrap nicely ── */
+  .section-takeoffs {
+    padding: 8px 10px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .section-takeoff-field { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .stf-input { width: 80px; font-size: 12px; }
+
+  .edit-inputs-btn { margin-left: 0; }
+
+  /* ── Material table: horizontal scroll ── */
+  .section-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  .mat-table { min-width: 640px; font-size: 11px; }
+  .mat-table th { font-size: 9px; padding: 5px 7px; }
+  .mat-table td { padding: 6px 7px; }
+
+  /* Hide formula column on mobile — too wide */
+  .mat-table th:nth-child(2),
+  .mat-table td:nth-child(2) { display: none; }
+
+  /* ── Allowance table ── */
+  .allowance-notes-td { display: none; } /* hide notes col on mobile */
+  .allowances-tab .section-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── Add section button ── */
+  .add-section-btn { font-size: 12px; padding: 10px; }
+
+  /* ── Empty state ── */
+  .empty-state { min-height: 200px; }
+  .empty-state h2 { font-size: 15px; }
+  .empty-icon { font-size: 36px; }
+
+  /* ── Modals: full screen on mobile ── */
+  .modal-box,
+  .modal-wide,
+  .modal-xwide {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 90dvh;
+    margin: 0;
+    border-radius: 12px 12px 0 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+
+  .modal-overlay {
+    align-items: flex-end;
+  }
+
+  /* ── Add Section library modal ── */
+  .add-section-layout {
+    flex-direction: column;
+    gap: 10px;
+    min-height: unset;
+  }
+
+  .add-section-cats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-right: 0;
+    padding-bottom: 10px;
+    margin-right: 0;
+    margin-bottom: 4px;
+  }
+
+  .cat-btn { padding: 5px 9px; font-size: 11px; }
+
+  /* ── Help grid: single column ── */
+  .help-grid { grid-template-columns: 1fr; }
+
+  /* ── Grand total badge ── */
+  .grand-total-badge { font-size: 13px; padding: 4px 8px; }
+}
+
+/* Summary panel drag handle for mobile bottom sheet */
+.sidebar-handle {
+  display: none;
+  width: 36px;
+  height: 4px;
+  background: var(--border2);
+  border-radius: 2px;
+  margin: 8px auto 4px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .sidebar-handle { display: block; }
+}
+
+/* Hide mobile-only elements on desktop */
+@media (min-width: 769px) {
+  .summary-toggle-btn { display: none !important; }
+  .sidebar-overlay { display: none !important; }
+}
