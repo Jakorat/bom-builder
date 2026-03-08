@@ -1496,8 +1496,9 @@ export default function App() {
   const [currentProjectId, setCurrentProjectId] = useState(saved?.currentProjectId || null);
   const [currentProjectName, setCurrentProjectName] = useState(saved?.currentProjectName || "Untitled Project");
   const [editingProjectName, setEditingProjectName] = useState(false);
-  const [activeTab, setActiveTab] = useState("bom"); // "bom" | "allowances"
+  const [activeTab, setActiveTab] = useState("bom");
   const [showSummary, setShowSummary] = useState(false);
+  const [showAddSection, setShowAddSection] = useState(false);
   const [showManageUnits, setShowManageUnits] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
