@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build"
+  directory = "dist"
+  node_version = "20"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
